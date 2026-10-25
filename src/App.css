@@ -1,0 +1,77 @@
+.navbar {
+  background-color: #2c5aa0;
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+}
+
+.page {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.message {
+  color: #b00020;
+}
+
+.book-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.book-card {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  width: 260px;
+}
+
+.login-box {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 24px;
+  width: 300px;
+  margin: 60px auto;
+}
+
+input {
+  padding: 8px;
+  margin-bottom: 10px;
+  width: 90%;
+}
+
+button {
+  background-color: #2c5aa0;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page input {
+  width: 200px;
+  margin-right: 8px;
+}
