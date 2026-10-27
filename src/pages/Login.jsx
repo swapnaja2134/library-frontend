@@ -1,11 +1,15 @@
+import { API_URL } from '../config'
+
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+
+import { Link, useNavigate } from 'react-router-dom'
 
 function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const navigate = useNavigate()
+    const [showForgot, setShowForgot] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -13,7 +17,7 @@ function Login() {
 
     try {
       // send username and password to the backend
-      const response = await fetch('http://localhost:8081/user/login', {
+      const response = await fetch(API_URL + '/user/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password })
@@ -25,6 +29,8 @@ function Login() {
         // save the token so we can use it on other pages
         localStorage.setItem('token', data.token)
         localStorage.setItem('role', data.role)
+        localStorage.setItem('username', data.username)
+        localStorage.setItem('name', data.name)
         navigate('/books')
       } else {
         setMessage(data.message)
@@ -69,6 +75,19 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+
+             <button
+              type="button"
+              className="text-sm underline text-teal-700 mb-3"
+              onClick={() => setShowForgot(!showForgot)}
+            >
+              Forgot password?
+            </button>
+            {showForgot && (
+              <p className="bg-teal-100 text-teal-800 text-sm px-3 py-2 rounded-md mb-3">
+                Please contact the librarian or admin. They can set a new temporary password for you.
+              </p>
+            )}
             <button
               className="w-full bg-teal-700 hover:bg-teal-800 text-white py-2 rounded-md"
               type="submit"
@@ -76,6 +95,10 @@ function Login() {
               Login
             </button>
           </form>
+
+                     <p className="text-sm text-gray-600 mt-4">
+            New here? <Link to="/register" className="text-teal-700 underline">Create an account</Link>
+          </p>
 
           <p className="text-red-600 text-sm mt-3">{message}</p>
         </div>

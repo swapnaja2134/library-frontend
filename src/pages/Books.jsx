@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
+import { API_URL } from '../config'
 
 function Books() {
   const [books, setBooks] = useState([])
   const [message, setMessage] = useState('')
   const [searchText, setSearchText] = useState('')
+  const [aiQuestion, setAiQuestion] = useState('')
+  const [aiNote, setAiNote] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const role = localStorage.getItem('role')
 
   // runs one time when the page opens
   useEffect(() => {
@@ -15,7 +20,7 @@ function Books() {
 
     try {
       // get all books from backend
-      const response = await fetch('http://localhost:8081/book/all', {
+      const response = await fetch(API_URL + '/book/all', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
 
@@ -40,7 +45,7 @@ function Books() {
     const token = localStorage.getItem('token')
 
     try {
-      const response = await fetch('http://localhost:8081/book/search?title=' + searchText, {
+      const response = await fetch(API_URL + '/book/search?title=' + searchText, {
         headers: { 'Authorization': 'Bearer ' + token }
       })
 
@@ -58,7 +63,7 @@ function Books() {
     const token = localStorage.getItem('token')
 
     try {
-      const response = await fetch('http://localhost:8081/borrow/' + bookId, {
+      const response = await fetch(API_URL + '/borrow/' + bookId, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token }
       })
@@ -71,6 +76,78 @@ function Books() {
     } catch (error) {
       setMessage('Could not connect to server')
     }
+  }
+
+  async function removeBook(bookId) {
+    // ask once more before deleting
+    if (!window.confirm('Remove this book from the library?')) {
+      return
+    }
+
+    const token = localStorage.getItem('token')
+
+    try {
+      const response = await fetch(API_URL + '/book/delete/' + bookId, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+
+      const data = await response.json()
+      setMessage(data.message)
+
+      // load again so the removed book disappears
+      loadBooks()
+    } catch (error) {
+      setMessage('Could not connect to server')
+    }
+  }
+
+  // ask the AI to find books for what the student typed
+  async function askAi() {
+    if (aiQuestion.trim() === '') {
+      return
+    }
+
+    const token = localStorage.getItem('token')
+    setAiLoading(true)
+    setAiNote('')
+
+    try {
+      const response = await fetch(API_URL + '/ai/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ question: aiQuestion })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setBooks(data.books)
+        if (data.usedAi) {
+          setAiNote('AI found ' + data.books.length + ' book(s) for you')
+        } else {
+          setAiNote(data.note)
+        }
+      } else {
+        setAiNote(data.message)
+      }
+    } catch (error) {
+      setAiNote('Could not connect to server')
+    }
+
+    setAiLoading(false)
+  }
+
+  // clear the boxes and show every book again
+  function showAllBooks() {
+    setAiQuestion('')
+    setAiNote('')
+    setSearchText('')
+    setMessage('')
+    loadBooks()
   }
 
   // colour of the strip on top of the card
@@ -117,7 +194,35 @@ function Books() {
       </div>
 
       <div className="p-6">
-        {/* search box */}
+        {/* AI search */}
+        <div className="bg-white border border-teal-200 rounded-lg p-4 mb-4">
+          <p className="text-sm font-medium text-teal-800 mb-2">Ask AI to find a book</p>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 bg-white border border-emerald-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600"
+              type="text"
+              placeholder="e.g. a book to start learning web development"
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+            />
+            <button
+              className="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-md"
+              onClick={askAi}
+              disabled={aiLoading}
+            >
+              {aiLoading ? 'Thinking...' : 'Ask AI'}
+            </button>
+          </div>
+          {aiNote && <p className="text-sm text-gray-600 mt-2">{aiNote}</p>}
+          <button
+            className="text-sm underline text-teal-700 mt-2"
+            onClick={showAllBooks}
+          >
+            Show all books
+          </button>
+        </div>
+
+        {/* normal search box */}
         <div className="flex gap-2 mb-4">
           <input
             className="bg-white border border-emerald-200 rounded-md px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-teal-600"
@@ -150,12 +255,26 @@ function Books() {
                 <span className={'text-xs px-3 py-1 rounded-full ' + getBadge(book).style}>
                   {getBadge(book).text}
                 </span>
-                <button
-                  className="w-full bg-teal-700 hover:bg-teal-800 text-white py-2 rounded-md mt-4"
-                  onClick={() => borrowBook(book.book_id)}
-                >
-                  Borrow
-                </button>
+
+                {/* members can borrow */}
+                {role === 'MEMBER' && (
+                  <button
+                    className="w-full bg-teal-700 hover:bg-teal-800 text-white py-2 rounded-md mt-4"
+                    onClick={() => borrowBook(book.book_id)}
+                  >
+                    Borrow
+                  </button>
+                )}
+
+                {/* only admin can remove */}
+                {role === 'ADMIN' && (
+                  <button
+                    className="w-full border border-red-600 text-red-700 hover:bg-red-50 py-2 rounded-md mt-4"
+                    onClick={() => removeBook(book.book_id)}
+                  >
+                    Remove book
+                  </button>
+                )}
               </div>
             </div>
           ))}
